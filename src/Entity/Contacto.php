@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\ContactoRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Constraints\Email;
 
 #[ORM\Entity(repositoryClass: ContactoRepository::class)]
 class Contacto
@@ -14,16 +16,21 @@ class Contacto
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank(message: 'El nombre es obligatorio')]
     private ?string $nombre = null;
 
     #[ORM\Column(length: 15)]
+    #[Assert\NotBlank(message: 'El teléfono es obligatorio')]
     private ?string $telefono = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'El correo es obligatorio')]
+    #[Assert\Email(message: 'Correo no válido')]
     private ?string $email = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank(message: 'La provincia es obligatoria')]
     private ?Provincia $provincia = null;
 
     public function getId(): ?int
