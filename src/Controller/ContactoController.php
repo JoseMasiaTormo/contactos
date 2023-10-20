@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Contacto;
+use App\Entity\Provincia;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,6 +35,49 @@ class ContactoController extends AbstractController
         } catch (\Exception $e) {
             return new Response("Error insertando objetos");
         }
+    }
+
+    #[Route('/contacto/insertarConProvincia', name: 'insertar_con_provincia')]
+    public function insertarConProvincia(ManagerRegistry $doctrine): Response{
+        $entityManager = $doctrine->getManager();
+        $provincia = new Provincia();
+
+        $provincia->setNombre("Alicante");
+        $contacto = new Contacto();
+
+        $contacto->setNombre("Inserción de prueba con provincia");
+        $contacto->setTelefono("900220022");
+        $contacto->setEmail("insercion.de.prueba.provincia@contacto.es");
+        $contacto->setProvincia($provincia);
+
+        $entityManager->persist($provincia);
+        $entityManager->persist($contacto);
+
+        $entityManager->flush();
+        return $this->render('ficha_contacto.html.twig', [
+            'contacto' => $contacto
+        ]);
+    }
+
+    #[Route('/contacto/insertarSinProvincia', name: 'insertar_sin_provincia')]
+    public function insertarSinProvincia(ManagerRegistry $doctrine): Response{
+        $entityManager = $doctrine->getManager();
+        $repositorio = $doctrine->getRepository(Provincia::class);
+
+        $provincia = $repositorio->findOneBy(["nombre" => "Alicante"]);
+        $contacto = new Contacto();
+
+        $contacto->setNombre("Inserción de prueba sin provincia");
+        $contacto->setTelefono("900220022");
+        $contacto->setEmail("insercion.de.prueba.sin.provincia@contacto.es");
+        $contacto->setProvincia($provincia);
+
+        $entityManager->persist($contacto);
+
+        $entityManager->flush();
+        return $this->render('ficha_contacto.html.twig', [
+            'contacto' => $contacto
+        ]);
     }
 
     #[Route('/contacto/update/{id}/{nombre}', name: 'modificar_contacto')]
@@ -77,6 +121,15 @@ class ContactoController extends AbstractController
                 'contacto' => null
             ]);
         }
+    }
+
+    #[Route('/contacto', name: 'ficha_todos_contactos')]
+    public function allContactos(ManagerRegistry $doctrine): Response {
+        $repositorio = $doctrine->getRepository(Contacto::class);
+        $contactos = $repositorio->findAll();
+        return $this->render('lista_contactos.html.twig', [
+            'contactos' => $contactos
+        ]);
     }
 
     #[Route('/contacto/{codigo}', name: 'ficha_contacto')]
