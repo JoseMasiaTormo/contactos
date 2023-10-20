@@ -143,14 +143,12 @@ class ContactoController extends AbstractController
     }
 
     #[Route('/contacto/buscar/{texto}', name: 'buscar_contacto')]
-    public function buscar($texto):Response {
-        $resultados = array_filter($this->contactos,
-            function($contacto) use ($texto){
-                return strpos($contacto["nombre"], $texto) !== FALSE;
-            }
-        );
+    public function buscar(ManagerRegistry $doctrine, $texto):Response {
+        $repositorio = $doctrine->getRepository(Contacto::class);
+        $contactos = $repositorio->findByName($texto);
+
         return $this->render('lista_contactos.html.twig', [
-            'contactos' => $resultados
+            'contactos' => $contactos
         ]);
     }
 }
