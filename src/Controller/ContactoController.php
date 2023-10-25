@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class ContactoController extends AbstractController
 {   
@@ -33,9 +34,16 @@ class ContactoController extends AbstractController
     }
 
     #[Route('/contacto/editar/{codigo}', name: 'editar_contacto')]
-    public function editar(ManagerRegistry $doctrine, Request $request, $codigo) {
-        $repositorio = $doctrine->getRepository(Contacto::class);
-        $contacto = $repositorio->find($codigo);
+    public function editar(ManagerRegistry $doctrine, Request $request, SessionInterface $session, $codigo) {
+        if (!$this->getUser()) {
+            $url = $this->generateUrl('editar_contacto',
+            ['codigo' => $codigo]);
+
+            $session->set('foo', $url); 
+            return $this->redirectToRoute('app_login');
+        } else {
+            $repositorio = $doctrine->getRepository(Contacto::class);
+            $contacto = $repositorio->find($codigo);
         if ($contacto) {
             $formulario = $this->createForm(ContactoFormType::class, $contacto);
             $formulario->handleRequest($request);
@@ -45,14 +53,16 @@ class ContactoController extends AbstractController
                 $entityManager = $doctrine->getManager();
                 $entityManager->persist($contacto);
                 $entityManager->flush();
+                return $this->redirectToRoute('ficha_todos_contactos');
             }
             return $this->render('editar.html.twig', array(
                 'formulario' => $formulario->createView()
             ));
         } else {
-            return $this->render('ficha_contacto.html,twig', [
+            return $this->render('ficha_contacto.html.twig', [
                 'contacto' => NULL
             ]);
+        }
         }
     }
 
@@ -140,16 +150,23 @@ class ContactoController extends AbstractController
     }
 
     #[Route('/contacto/delete/{id}', name: 'borrar_contacto')]
-    public function delete(ManagerRegistry $doctrine, $id): Response{
-        $entityManager = $doctrine->getManager();
-        $repositorio = $doctrine->getRepository(Contacto::class);
-        $contacto = $repositorio->find($id);
+    public function delete(ManagerRegistry $doctrine, SessionInterface $session, $id): Response{
+        if(!$this->getUser()) {
+            $url = $this->generateUrl('borrar_contacto',
+            ['id' => $id]);
+
+            $session->set('foo', $url); 
+            return $this->redirectToRoute('app_login');
+        } else {
+            $entityManager = $doctrine->getManager();
+            $repositorio = $doctrine->getRepository(Contacto::class);
+            $contacto = $repositorio->find($id);
 
         if ($contacto) {
             try {
                 $entityManager->remove($contacto);
                 $entityManager->flush();
-                return new Response("Contacto eliminado");
+                return $this->redirectToRoute('ficha_todos_contactos');
             } catch (\Exception $e) {
                 return new Response("Error eliminando objeto");
             }
@@ -157,6 +174,7 @@ class ContactoController extends AbstractController
             return $this->render('ficha_contacto.html.twig', [
                 'contacto' => null
             ]);
+        }
         }
     }
 
