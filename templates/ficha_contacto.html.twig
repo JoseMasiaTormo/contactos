@@ -6,6 +6,9 @@
         {{ include ('partials/datos_contacto.html.twig', { 'contacto': contacto})}}
         <a href="{{ path('editar_contacto', {'codigo': contacto.id}) }}">Editar</a>
         <a href="{{ path('borrar_contacto', {'id': contacto.id}) }}">Borrar</a>
+        {% if contacto.file %}
+            <img src="{{ asset('images/' ~ contacto.file) }}">
+        {% endif %}
     {% else %}
         <p>Contacto no encontrado</p>
     {% endif %}

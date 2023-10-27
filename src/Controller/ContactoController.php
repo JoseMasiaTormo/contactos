@@ -11,17 +11,40 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 class ContactoController extends AbstractController
 {   
     #[Route('/contacto/nuevo', name: 'nuevo_contacto')]
-    public function nuevo(ManagerRegistry $doctrine, Request $request) {
+    public function nuevo(ManagerRegistry $doctrine, Request $request, SluggerInterface $slugger) {
         $contacto = new Contacto();
 
         $formulario = $this->createForm(ContactoFormType::class, $contacto);
             $formulario->handleRequest($request);
 
             if ($formulario->isSubmitted() && $formulario->isValid()) {
+                $file = $formulario->get('file')->getData();
+                if($file) {
+                    $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $safeFilename = $slugger->slug($originalFilename);
+                    $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
+
+                    try{
+                        $file->move(
+                            $this->getParameter('images_directory'), $newFilename
+                        );
+                        $filesystem = new Filesystem();
+                        $filesystem->copy(
+                            $this->getParameter('images_directory') . '/' . $newFilename, true
+                        );
+                    } catch (FileException $e) {
+
+                    }
+                    $contacto->setFile($newFilename);
+                }
                 $contacto = $formulario->getData();
                 $entityManager = $doctrine->getManager();
                 $entityManager->persist($contacto);
@@ -34,7 +57,7 @@ class ContactoController extends AbstractController
     }
 
     #[Route('/contacto/editar/{codigo}', name: 'editar_contacto')]
-    public function editar(ManagerRegistry $doctrine, Request $request, SessionInterface $session, $codigo) {
+    public function editar(ManagerRegistry $doctrine, Request $request, SessionInterface $session, SluggerInterface $slugger, $codigo) {
         if (!$this->getUser()) {
             $url = $this->generateUrl('editar_contacto',
             ['codigo' => $codigo]);
@@ -49,6 +72,25 @@ class ContactoController extends AbstractController
             $formulario->handleRequest($request);
 
             if ($formulario->isSubmitted() && $formulario->isValid()) {
+                $file = $formulario->get('file')->getData();
+                if($file) {
+                    $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $safeFilename = $slugger->slug($originalFilename);
+                    $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
+
+                    try{
+                        $file->move(
+                            $this->getParameter('images_directory'), $newFilename
+                        );
+                        $filesystem = new Filesystem();
+                        $filesystem->copy(
+                            $this->getParameter('images_directory') . '/' . $newFilename, true
+                        );
+                    } catch (FileException $e) {
+
+                    }
+                    $contacto->setFile($newFilename);
+                }
                 $contacto = $formulario->getData();
                 $entityManager = $doctrine->getManager();
                 $entityManager->persist($contacto);
